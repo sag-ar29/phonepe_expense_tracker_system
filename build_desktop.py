@@ -30,6 +30,13 @@ def build_frontend():
     run_command(f"{npm_cmd} run build", cwd=FRONTEND_DIR)
     print("✅ Frontend build completed successfully.")
 
+def get_python_cmd():
+    """Prefers the project's .venv Python interpreter if it exists."""
+    venv_python = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
+    if venv_python.exists():
+        return str(venv_python)
+    return sys.executable
+
 def package_standalone_exe():
     """Packages the entire app into a single standalone .exe file via PyInstaller."""
     build_frontend()
@@ -41,23 +48,24 @@ def package_standalone_exe():
 
     # PyInstaller data separator is ';' on Windows, ':' on Unix
     sep = ";" if sys.platform == "win32" else ":"
+    python_cmd = get_python_cmd()
 
     pyinstaller_cmd = [
-        sys.executable,
+        f'"{python_cmd}"',
         "-m", "PyInstaller",
         "--noconsole",
         "--onefile",
         "--name", "PhonePeExpenseTracker",
         "--clean",
         "--collect-all", "webview",
-        f"--add-data", f"{dist_src}{sep}dist",
-        f"--add-data", f"{sample_data}{sep}data",
+        f"--add-data", f'"{dist_src}{sep}dist"',
+        f"--add-data", f'"{sample_data}{sep}data"',
     ]
 
     if icon_path.exists():
-        pyinstaller_cmd.extend(["--icon", str(icon_path)])
+        pyinstaller_cmd.extend(["--icon", f'"{icon_path}"'])
 
-    pyinstaller_cmd.append(str(BACKEND_DIR / "desktop_main.py"))
+    pyinstaller_cmd.append(f'"{BACKEND_DIR / "desktop_main.py"}"')
 
     run_command(" ".join(pyinstaller_cmd))
     print("\n🎉 SUCCESS! Standalone single executable created:")
@@ -68,9 +76,9 @@ def package_standalone_exe():
 def run_desktop(dev_mode=False):
     """Launches the PyWebView desktop application directly."""
     print("🖥️  Launching PhonePe Expense Intelligence Desktop...")
-    python_cmd = sys.executable
+    python_cmd = get_python_cmd()
     script_path = BACKEND_DIR / "desktop_main.py"
-    cmd = [python_cmd, str(script_path)]
+    cmd = [f'"{python_cmd}"', f'"{script_path}"']
     if dev_mode:
         cmd.append("--dev")
     run_command(" ".join(cmd))
